@@ -19,14 +19,20 @@ def load_data():
 
     df = pd.read_csv(DATA_FILE)
 
-st.write(df.columns)
-df.columns = df.columns.str.strip()
-df["Male Population"] = df["Total Population"] - df["Female Population"]
+    # FIX: strip column names
+    df.columns = df.columns.str.strip()
 
-df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
-df.fillna(0, inplace=True)
-return df
+    # Optional: debug column names
+    st.write(df.columns)
 
+    # Calculations
+    df["Male Population"] = df["Total Population"] - df["Female Population"]
+    df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
+
+    # Replace NaN with 0
+    df.fillna(0, inplace=True)
+
+    return df
 
 def save_data(df):
     df.to_csv(DATA_FILE, index=False)
