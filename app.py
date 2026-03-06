@@ -17,15 +17,15 @@ def load_data():
         st.error("Dataset file not found")
         return pd.DataFrame()
 
-    # Only load the columns your app actually uses
+    # Only load columns that your app uses
     needed_columns = ["Year", "Population, total", "Population, female",
                       "Urban population", "Rural population"]
     df = pd.read_csv(DATA_FILE, usecols=needed_columns)
 
-    # Strip whitespace
+    # Strip any whitespace
     df.columns = df.columns.str.strip()
 
-    # Rename CSV columns to match your code
+    # Rename CSV columns to match your app
     df.rename(columns={
         "Population, total": "Total Population",
         "Population, female": "Female Population",
@@ -34,13 +34,19 @@ def load_data():
         "Year": "Year"
     }, inplace=True)
 
-    # Calculate Male Population
-    df["Male Population"] = df["Total Population"] - df["Female Population"]
+    # Only calculate Male Population if both columns exist
+    if "Total Population" in df.columns and "Female Population" in df.columns:
+        df["Male Population"] = df["Total Population"] - df["Female Population"]
+    else:
+        st.warning("Required columns missing to calculate Male Population")
+        df["Male Population"] = 0
 
-    # Calculate Annual Growth Rate
-    df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
+    # Annual Growth Rate
+    if "Total Population" in df.columns:
+        df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
+    else:
+        df["Annual Growth Rate (%)"] = 0
 
-    # Replace NaNs with 0
     df.fillna(0, inplace=True)
 
     return df
@@ -54,7 +60,7 @@ df = load_data()
 if df.empty:
     st.stop()
 
-# Sidebar navigation
+# Sidebar
 st.sidebar.title("Navigation 🇵🇰")
 page = st.sidebar.selectbox(
     "Choose Page",
@@ -65,15 +71,18 @@ page = st.sidebar.selectbox(
 if page == "Dashboard":
     st.title("Pakistan Population Dashboard 🇵🇰")
 
-    latest = df["Total Population"].iloc[-1]
-    first = df["Total Population"].iloc[0]
-    growth = latest - first
-    avg = df["Annual Growth Rate (%)"].mean()
+    if "Total Population" in df.columns:
+        latest = df["Total Population"].iloc[-1]
+        first = df["Total Population"].iloc[0]
+        growth = latest - first
+        avg = df["Annual Growth Rate (%)"].mean()
 
-    col1, col2, col3 = st.columns(3)
-    col1.metric("Latest Population", f"{latest:,.0f}")
-    col2.metric("Total Growth", f"{growth:,.0f}")
-    col3.metric("Average Growth Rate", f"{avg:.2f}%")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Latest Population", f"{latest:,.0f}")
+        col2.metric("Total Growth", f"{growth:,.0f}")
+        col3.metric("Average Growth Rate", f"{avg:.2f}%")
+    else:
+        st.warning("Total Population column missing, cannot show metrics.")
 
     st.dataframe(df)
 
@@ -141,10 +150,14 @@ elif page == "Delete":
 # ---------------- CHARTS ----------------
 elif page == "Charts":
     st.title("Charts")
-    st.line_chart(df.set_index("Year")["Total Population"])
 
-    fig, ax = plt.subplots()
-    ax.bar(df["Year"], df["Total Population"])
-    ax.set_xlabel("Year")
-    ax.set_ylabel("Total Population")
-    st.pyplot(fig)
+    if "Total Population" in df.columns:
+        st.line_chart(df.set_index("Year")["Total Population"])
+
+        fig, ax = plt.subplots()
+        ax.bar(df["Year"], df["Total Population"])
+        ax.set_xlabel("Year")
+        ax.set_ylabel("Total Population")
+        st.pyplot(fig)
+    else:
+        st.warning("Total Population column missing, cannot show charts.")
