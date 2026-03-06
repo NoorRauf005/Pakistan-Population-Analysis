@@ -17,12 +17,13 @@ def load_data():
         st.error("Dataset file not found")
         return pd.DataFrame()
 
+    # Load CSV
     df = pd.read_csv(DATA_FILE)
 
-    # Strip whitespace
+    # Strip any whitespace
     df.columns = df.columns.str.strip()
 
-    # Rename CSV columns to match the app
+    # Rename CSV columns exactly to match the app
     df.rename(columns={
         "Population, total": "Total Population",
         "Population, female": "Female Population",
@@ -32,14 +33,14 @@ def load_data():
         "Year": "Year"
     }, inplace=True)
 
-    # Calculate Male Population if missing
+    # Calculate Male Population if missing or invalid
     if "Male Population" not in df.columns or df["Male Population"].isnull().all():
         df["Male Population"] = df["Total Population"] - df["Female Population"]
 
     # Annual Growth Rate
     df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
 
-    # Fill NaNs with 0
+    # Replace NaNs with 0
     df.fillna(0, inplace=True)
 
     return df
@@ -53,14 +54,14 @@ df = load_data()
 if df.empty:
     st.stop()
 
-# Sidebar navigation
+# Sidebar
 st.sidebar.title("Navigation 🇵🇰")
 page = st.sidebar.selectbox(
     "Choose Page",
     ["Dashboard", "Search", "Add", "Update", "Delete", "Charts"]
 )
 
-# ------------------ DASHBOARD ------------------
+# ---------------- DASHBOARD ----------------
 if page == "Dashboard":
     st.title("Pakistan Population Dashboard 🇵🇰")
 
@@ -76,7 +77,7 @@ if page == "Dashboard":
 
     st.dataframe(df)
 
-# ------------------ SEARCH ------------------
+# ---------------- SEARCH ----------------
 elif page == "Search":
     st.title("Search")
     year = st.number_input("Enter year", 1960, 2100, 2020)
@@ -86,7 +87,7 @@ elif page == "Search":
     else:
         st.warning("No data found")
 
-# ------------------ ADD ------------------
+# ---------------- ADD ----------------
 elif page == "Add":
     st.title("Add Record")
     year = st.number_input("Year", 1960, 2100)
@@ -109,7 +110,7 @@ elif page == "Add":
         save_data(df2)
         st.success("Added")
 
-# ------------------ UPDATE ------------------
+# ---------------- UPDATE ----------------
 elif page == "Update":
     st.title("Update")
     year = st.number_input("Year to update", 1960, 2100)
@@ -128,7 +129,7 @@ elif page == "Update":
     else:
         st.warning("Year not found in dataset")
 
-# ------------------ DELETE ------------------
+# ---------------- DELETE ----------------
 elif page == "Delete":
     st.title("Delete")
     year = st.number_input("Year to delete", 1960, 2100)
@@ -137,7 +138,7 @@ elif page == "Delete":
         save_data(df2)
         st.success("Deleted")
 
-# ------------------ CHARTS ------------------
+# ---------------- CHARTS ----------------
 elif page == "Charts":
     st.title("Charts")
     st.line_chart(df.set_index("Year")["Total Population"])
