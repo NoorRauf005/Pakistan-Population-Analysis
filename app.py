@@ -25,7 +25,6 @@ df["Male Population"] = df["Total Population"] - df["Female Population"]
 
 df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
 df.fillna(0, inplace=True)
-
 return df
 
 
