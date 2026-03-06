@@ -19,7 +19,7 @@ def load_data():
 
     df = pd.read_csv(DATA_FILE)
 
-    # Strip whitespace from column names
+    # Strip whitespace
     df.columns = df.columns.str.strip()
 
     # Rename CSV columns to match the app
@@ -32,14 +32,14 @@ def load_data():
         "Year": "Year"
     }, inplace=True)
 
-    # Calculate Male Population if missing or incorrect
+    # Calculate Male Population if missing
     if "Male Population" not in df.columns or df["Male Population"].isnull().all():
         df["Male Population"] = df["Total Population"] - df["Female Population"]
 
-    # Calculate annual growth rate
+    # Annual Growth Rate
     df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
 
-    # Replace NaN values with 0
+    # Fill NaNs with 0
     df.fillna(0, inplace=True)
 
     return df
@@ -64,18 +64,17 @@ page = st.sidebar.selectbox(
 if page == "Dashboard":
     st.title("Pakistan Population Dashboard 🇵🇰")
 
-    if not df.empty:
-        latest = df["Total Population"].iloc[-1]
-        first = df["Total Population"].iloc[0]
-        growth = latest - first
-        avg = df["Annual Growth Rate (%)"].mean()
+    latest = df["Total Population"].iloc[-1]
+    first = df["Total Population"].iloc[0]
+    growth = latest - first
+    avg = df["Annual Growth Rate (%)"].mean()
 
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Latest Population", f"{latest:,.0f}")
-        col2.metric("Total Growth", f"{growth:,.0f}")
-        col3.metric("Average Growth Rate", f"{avg:.2f}%")
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Latest Population", f"{latest:,.0f}")
+    col2.metric("Total Growth", f"{growth:,.0f}")
+    col3.metric("Average Growth Rate", f"{avg:.2f}%")
 
-        st.dataframe(df)
+    st.dataframe(df)
 
 # ------------------ SEARCH ------------------
 elif page == "Search":
