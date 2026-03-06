@@ -19,19 +19,36 @@ def load_data():
 
     df = pd.read_csv(DATA_FILE)
 
-    # Debug column names (optional)
-    st.write(df.columns)
+    # Debug: show original column names
+    st.write("COLUMNS BEFORE STRIP:", df.columns.tolist())
 
-    # Strip any extra spaces from column names
+    # Remove extra spaces from column names
     df.columns = df.columns.str.strip()
 
-    # Calculate male population
-    df["Male Population"] = df["Total Population"] - df["Female Population"]
+    # Rename columns to match the app consistently
+    df.rename(columns={
+        'total': 'Total Population',          # replace 'total' with your CSV column name
+        'female': 'Female Population',        # replace 'female' with your CSV column name
+        'urban': 'Urban Population',          # optional, adjust as needed
+        'rural': 'Rural Population',          # optional, adjust as needed
+        'year': 'Year'                        # optional, adjust as needed
+    }, inplace=True)
 
-    # Calculate annual growth rate
-    df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
+    # Debug: show renamed column names
+    st.write("COLUMNS AFTER RENAME:", df.columns.tolist())
 
-    # Replace NaN values with 0
+    # Calculate male population safely
+    if "Total Population" in df.columns and "Female Population" in df.columns:
+        df["Male Population"] = df["Total Population"] - df["Female Population"]
+    else:
+        st.warning("Required columns missing for Male Population calculation")
+
+    # Calculate annual growth rate safely
+    if "Total Population" in df.columns:
+        df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
+    else:
+        df["Annual Growth Rate (%)"] = 0
+
     df.fillna(0, inplace=True)
 
     return df
@@ -40,55 +57,48 @@ def save_data(df):
     df.to_csv(DATA_FILE, index=False)
     st.cache_data.clear()
 
-
+# Load data
 df = load_data()
+if df.empty:
+    st.stop()
 
+# Sidebar navigation
 st.sidebar.title("Navigation 🇵🇰")
-
 page = st.sidebar.selectbox(
     "Choose Page",
     ["Dashboard", "Search", "Add", "Update", "Delete", "Charts"]
 )
 
+# ------------------ DASHBOARD ------------------
 if page == "Dashboard":
-
     st.title("Pakistan Population Dashboard 🇵🇰")
 
     if not df.empty:
-
         latest = df["Total Population"].iloc[-1]
         first = df["Total Population"].iloc[0]
         growth = latest - first
         avg = df["Annual Growth Rate (%)"].mean()
 
         col1, col2, col3 = st.columns(3)
-
         col1.metric("Latest Population", f"{latest:,.0f}")
         col2.metric("Total Growth", f"{growth:,.0f}")
         col3.metric("Average Growth Rate", f"{avg:.2f}%")
 
-
         st.dataframe(df)
 
-
+# ------------------ SEARCH ------------------
 elif page == "Search":
-
     st.title("Search")
-
     year = st.number_input("Enter year", 1960, 2100, 2020)
-
     result = df[df["Year"] == year]
-
     if not result.empty:
         st.dataframe(result)
     else:
         st.warning("No data found")
 
-
+# ------------------ ADD ------------------
 elif page == "Add":
-
     st.title("Add Record")
-
     year = st.number_input("Year", 1960, 2100)
     total = st.number_input("Total Population")
     female = st.number_input("Female Population")
@@ -96,72 +106,54 @@ elif page == "Add":
     rural = st.number_input("Rural Population")
 
     if st.button("Add"):
-
         male = total - female
-
         new = pd.DataFrame({
-            "Year":[year],
-            "Total Population":[total],
-            "Female Population":[female],
-            "Urban Population":[urban],
-            "Rural Population":[rural],
-            "Male Population":[male]
+            "Year": [year],
+            "Total Population": [total],
+            "Female Population": [female],
+            "Urban Population": [urban],
+            "Rural Population": [rural],
+            "Male Population": [male]
         })
-
-        df2 = pd.concat([df,new])
-
+        df2 = pd.concat([df, new], ignore_index=True)
         save_data(df2)
-
         st.success("Added")
 
-
+# ------------------ UPDATE ------------------
 elif page == "Update":
-
     st.title("Update")
-
-    year = st.number_input("Year to update",1960,2100)
+    year = st.number_input("Year to update", 1960, 2100)
 
     if year in df["Year"].values:
-
-        row = df[df["Year"]==year].iloc[0]
-
-        total = st.number_input("Total Population",value=int(row["Total Population"]))
-        female = st.number_input("Female Population",value=int(row["Female Population"]))
+        row = df[df["Year"] == year].iloc[0]
+        total = st.number_input("Total Population", value=int(row["Total Population"]))
+        female = st.number_input("Female Population", value=int(row["Female Population"]))
 
         if st.button("Update"):
-
-            df.loc[df["Year"]==year,"Total Population"]=total
-            df.loc[df["Year"]==year,"Female Population"]=female
-            df.loc[df["Year"]==year,"Male Population"]=total-female
-
+            df.loc[df["Year"] == year, "Total Population"] = total
+            df.loc[df["Year"] == year, "Female Population"] = female
+            df.loc[df["Year"] == year, "Male Population"] = total - female
             save_data(df)
-
             st.success("Updated")
+    else:
+        st.warning("Year not found in dataset")
 
-
+# ------------------ DELETE ------------------
 elif page == "Delete":
-
     st.title("Delete")
-
-    year = st.number_input("Year to delete",1960,2100)
-
+    year = st.number_input("Year to delete", 1960, 2100)
     if st.button("Delete"):
-
-        df2 = df[df["Year"]!=year]
-
+        df2 = df[df["Year"] != year]
         save_data(df2)
-
         st.success("Deleted")
 
-
+# ------------------ CHARTS ------------------
 elif page == "Charts":
-
     st.title("Charts")
-
     st.line_chart(df.set_index("Year")["Total Population"])
 
-    fig,ax=plt.subplots()
-
-    ax.bar(df["Year"],df["Total Population"])
-
+    fig, ax = plt.subplots()
+    ax.bar(df["Year"], df["Total Population"])
+    ax.set_xlabel("Year")
+    ax.set_ylabel("Total Population")
     st.pyplot(fig)
