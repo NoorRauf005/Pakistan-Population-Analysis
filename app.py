@@ -19,17 +19,19 @@ def load_data():
 
     df = pd.read_csv(DATA_FILE)
 
-    # FIX: strip column names
-    df.columns = df.columns.str.strip()
-
-    # Optional: debug column names
+    # Debug column names (optional)
     st.write(df.columns)
 
-    # Calculations
+    # Strip any extra spaces from column names
+    df.columns = df.columns.str.strip()
+
+    # Calculate male population
     df["Male Population"] = df["Total Population"] - df["Female Population"]
+
+    # Calculate annual growth rate
     df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
 
-    # Replace NaN with 0
+    # Replace NaN values with 0
     df.fillna(0, inplace=True)
 
     return df
