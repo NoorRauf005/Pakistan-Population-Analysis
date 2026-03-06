@@ -19,36 +19,27 @@ def load_data():
 
     df = pd.read_csv(DATA_FILE)
 
-    # Debug: show original column names
-    st.write("COLUMNS BEFORE STRIP:", df.columns.tolist())
-
-    # Remove extra spaces from column names
+    # Strip whitespace from column names
     df.columns = df.columns.str.strip()
 
-    # Rename columns to match the app consistently
+    # Rename CSV columns to match the app
     df.rename(columns={
-        'total': 'Total Population',          # replace 'total' with your CSV column name
-        'female': 'Female Population',        # replace 'female' with your CSV column name
-        'urban': 'Urban Population',          # optional, adjust as needed
-        'rural': 'Rural Population',          # optional, adjust as needed
-        'year': 'Year'                        # optional, adjust as needed
+        "Population, total": "Total Population",
+        "Population, female": "Female Population",
+        "Population, male (% of total population)": "Male Population",
+        "Urban population": "Urban Population",
+        "Rural population": "Rural Population",
+        "Year": "Year"
     }, inplace=True)
 
-    # Debug: show renamed column names
-    st.write("COLUMNS AFTER RENAME:", df.columns.tolist())
-
-    # Calculate male population safely
-    if "Total Population" in df.columns and "Female Population" in df.columns:
+    # Calculate Male Population if missing or incorrect
+    if "Male Population" not in df.columns or df["Male Population"].isnull().all():
         df["Male Population"] = df["Total Population"] - df["Female Population"]
-    else:
-        st.warning("Required columns missing for Male Population calculation")
 
-    # Calculate annual growth rate safely
-    if "Total Population" in df.columns:
-        df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
-    else:
-        df["Annual Growth Rate (%)"] = 0
+    # Calculate annual growth rate
+    df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
 
+    # Replace NaN values with 0
     df.fillna(0, inplace=True)
 
     return df
@@ -111,9 +102,9 @@ elif page == "Add":
             "Year": [year],
             "Total Population": [total],
             "Female Population": [female],
+            "Male Population": [male],
             "Urban Population": [urban],
-            "Rural Population": [rural],
-            "Male Population": [male]
+            "Rural Population": [rural]
         })
         df2 = pd.concat([df, new], ignore_index=True)
         save_data(df2)
