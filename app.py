@@ -23,8 +23,8 @@ st.write(df.columns)
 df.columns = df.columns.str.strip()
 df["Male Population"] = df["Total Population"] - df["Female Population"]
 
-    df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
-    df.fillna(0, inplace=True)
+df["Annual Growth Rate (%)"] = df["Total Population"].pct_change() * 100
+df.fillna(0, inplace=True)
 
     return df
 
