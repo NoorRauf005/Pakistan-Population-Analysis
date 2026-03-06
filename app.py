@@ -19,7 +19,7 @@ def load_data():
 
     df = pd.read_csv(DATA_FILE)
 
-   
+   st.write(df.columns)
         df.columns = df.columns.str.strip()
         df["Male Population"] = df["Total Population"] - df["Female Population"]
 
